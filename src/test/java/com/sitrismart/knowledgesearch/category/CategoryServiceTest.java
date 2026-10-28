@@ -15,6 +15,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.sitrismart.knowledgesearch.article.ArticleRepository;
 import com.sitrismart.knowledgesearch.category.dto.CategoryRequest;
 import com.sitrismart.knowledgesearch.category.dto.CategoryResponse;
 import com.sitrismart.knowledgesearch.common.ConflictException;
@@ -25,6 +26,9 @@ class CategoryServiceTest {
 
 	@Mock
 	private CategoryRepository repository;
+
+	@Mock
+	private ArticleRepository articleRepository;
 
 	@InjectMocks
 	private CategoryService service;
@@ -64,6 +68,17 @@ class CategoryServiceTest {
 
 		assertThatThrownBy(() -> service.update(1L, new CategoryRequest("SQL", null)))
 				.isInstanceOf(ConflictException.class);
+	}
+
+	@Test
+	void deleteRejectsCategoryWithArticles() {
+		Category java = new Category("Java", null);
+		when(repository.findById(1L)).thenReturn(Optional.of(java));
+		when(articleRepository.existsByCategoryId(1L)).thenReturn(true);
+
+		assertThatThrownBy(() -> service.delete(1L))
+				.isInstanceOf(ConflictException.class);
+		verify(repository, never()).delete(java);
 	}
 
 	@Test

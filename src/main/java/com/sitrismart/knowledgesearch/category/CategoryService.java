@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sitrismart.knowledgesearch.article.ArticleRepository;
 import com.sitrismart.knowledgesearch.category.dto.CategoryRequest;
 import com.sitrismart.knowledgesearch.category.dto.CategoryResponse;
 import com.sitrismart.knowledgesearch.common.ConflictException;
@@ -14,9 +15,11 @@ import com.sitrismart.knowledgesearch.common.ResourceNotFoundException;
 public class CategoryService {
 
 	private final CategoryRepository repository;
+	private final ArticleRepository articleRepository;
 
-	public CategoryService(CategoryRepository repository) {
+	public CategoryService(CategoryRepository repository, ArticleRepository articleRepository) {
 		this.repository = repository;
+		this.articleRepository = articleRepository;
 	}
 
 	@Transactional(readOnly = true)
@@ -51,7 +54,11 @@ public class CategoryService {
 
 	@Transactional
 	public void delete(Long id) {
-		repository.delete(getCategory(id));
+		Category category = getCategory(id);
+		if (articleRepository.existsByCategoryId(id)) {
+			throw new ConflictException("Category still has articles: " + id);
+		}
+		repository.delete(category);
 	}
 
 	private Category getCategory(Long id) {
